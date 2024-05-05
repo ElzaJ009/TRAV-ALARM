@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time User Location Tracking</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <style>
+        #map { 
+            height: 60vh; /* Set the map height to 60% of the viewport height */
+            width: 80%; /* Set the map width to 80% of the viewport width */
+            margin: 0 auto; /* Center the map horizontally */
+            border: 2px solid #ccc; /* Add a border around the map */
+            border-radius: 10px; /* Add border radius */
+        }
+        #location-info {
+            text-align: center; /* Center-align the location info */
+            margin-top: 20px; /* Add some space between the map and location info */
+        }
+        #search-form {
+            text-align: center; /* Center-align the search form */
+            margin-top: 20px; /* Add some space between the map and search form */
+        }
+        #search-input {
+            padding: 5px; /* Add padding to the search input field */
+            border-radius: 5px; /* Add border radius to the search input field */
+            border: 1px solid #ccc; /* Add border to the search input field */
+            margin-right: 5px; /* Add margin to the right of the search input field */
+        }
+        #search-button {
+            padding: 5px 10px; /* Add padding to the search button */
+            border-radius: 5px; /* Add border radius to the search button */
+            background-color: #007bff; /* Set background color of the search button */
+            color: #fff; /* Set text color of the search button */
+            border: none; /* Remove border of the search button */
+            cursor: pointer; /* Set cursor style to pointer for the search button */
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="location-info">
+        <p>Current Location: Latitude: <span id="current-lat"></span>, Longitude: <span id="current-lng"></span>, Place: <span id="current-place"></span></p>
+        <p>Destination: Latitude: <span id="dest-lat"></span>, Longitude: <span id="dest-lng"></span>, Place: <span id="dest-place"></span>, Distance: <span id="distance"></span> km</p>
+    </div>
+    <div id="search-form">
+        <input type="text" id="search-input" placeholder="Enter a place">
+        <button id="search-button">Search</button>
+    </div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://api.opencagedata.com/geocode/v1/leaflet.js?key=9def81d7fd6143e19afa0dd69f12d762"></script>
+    <script>
+        var map = L.map('map').setView([0, 0], 2); // Set the initial map view
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map); // Add OpenStreetMap tiles
+
+        // Initialize the markers with default locations
+        var currentMarker = L.marker([0, 0]).addTo(map);
+        var destMarker = L.marker([0, 0]).addTo(map);
+
+        // Initialize the polyline
+        var polyline;
+
+        // Function to update the marker's location and display coordinates
+        function updateMarkerAndCoordinates(marker, lat, lng) {
+            marker.setLatLng([lat, lng]);
+            return {lat: lat.toFixed(6), lng: lng.toFixed(6)};
+        }
+
+        // Function to fetch place name using OpenCage Geocoding API
+        function fetchPlace(lat, lng, elementId) {
+            fetch(`https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=9def81d7fd6143e19afa0dd69f12d762`)
+                .then(response => response.json())
+                .then(data => {
+                    var place = data.results[0].formatted;
+                    document.getElementById(elementId).textContent = place;
+                })
+                .catch(error => {
+                    console.error('Error fetching place:', error);
+                });
+        }
+
+        // Function to calculate distance between two points in kilometers using Haversine formula
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius of the Earth in kilometers
+            const dLat = (lat2 - lat1) * Math.PI / 180; // Convert degrees to radians
+            const dLon = (lon2 - lon1) * Math.PI / 180; // Convert degrees to radians
+            const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distance = R * c; // Distance in kilometers
+            return distance;
+        }
+
+        // Function to handle search button click event
+        document.getElementById('search-button').addEventListener('click', function() {
+            var query = document.getElementById('search-input').value;
+            if (query.trim() !== '') {
+                fetch(`https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(query)}&key=9def81d7fd6143e19afa0dd69f12d762`)
+                    .then(response => response.json())
+                    .then(data => {
+                        var lat = data.results[0].geometry.lat;
+                        var lng = data.results[0].geometry.lng;
+                        map.setView([lat, lng], 12); // Set the map view to the searched location with zoom level 12
+                        var destCoords = updateMarkerAndCoordinates(destMarker, lat, lng);
+                        fetchPlace(destCoords.lat, destCoords.lng, 'dest-place'); // Update destination place name
+                        document.getElementById('dest-lat').textContent = destCoords.lat;
+                        document.getElementById('dest-lng').textContent = destCoords.lng;
+
+                        // Remove existing polyline
+                        if (polyline) {
+                            map.removeLayer(polyline);
+                        }
+
+                        // Draw a new polyline between current and destination locations
+                        var currentLat = parseFloat(document.getElementById('current-lat').textContent);
+                        var currentLng = parseFloat(document.getElementById('current-lng').textContent);
+                        polyline = L.polyline([[currentLat, currentLng], [lat, lng]], {color: 'blue'}).addTo(map);
+
+                        // Calculate distance between current and destination locations
+                        var distance = haversineDistance(currentLat, currentLng, lat, lng);
+                        document.getElementById('distance').textContent = distance.toFixed(2);
+
+                        // Check if current location is close to destination
+                        if (distance <= 0.1) { // Change 0.1 to your desired threshold in kilometers
+                            alert("You are near your destination!");
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching place:', error);
+                    });
+            }
+        });
+
+        // Fetch user's location initially and continuously
+        function trackUserLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(function (position) {
+                    var lat = position.coords.latitude;
+                    var lng = position.coords.longitude;
+                    map.setView([lat, lng], 12); // Set the map view to the user's location with zoom level 12
+                    var currentCoords = updateMarkerAndCoordinates(currentMarker, lat, lng);
+                    fetchPlace(lat, lng, 'current-place'); // Update current place name
+                    document.getElementById('current-lat').textContent = currentCoords.lat;
+                    document.getElementById('current-lng').textContent = currentCoords.lng;
+
+                    // Log user's location to the console
+                    console.log("Current Location:", lat, lng);
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        // Start tracking user's location
+        trackUserLocation();
+    </script>
+</body>
+</html>

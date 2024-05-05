@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <title>Register / Login Form</title>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="page" id="first">
+      <div class="back">
+        <div class="outer">
+          <div class="content">
+            <div class="form-wrapper">
+              <h1 class="heading">Get Started</h1>
+              <p class="login-link">
+                Already have an account
+                <a href="#" class="login-btn">Login</a>
+              </p>
+              <form action="#" id="register-form">
+                <div class="item">
+                  <label for="email">Email address</label>
+                  <div class="input">
+                    <ion-icon name="mail-outline"></ion-icon>
+                    <input
+                      type="text"
+                      id="email"
+                      placeholder="example@mail.com"
+                    />
+                  </div>
+                  <p class="error-msg" id="email-error-msg">Please enter a valid email address</p>
+                </div>
+                <div class="item">
+                  <label for="password">Password</label>
+                  <div class="input">
+                    <ion-icon name="lock-closed-outline"></ion-icon>
+                    <input
+                      type="password"
+                      id="password"
+                      placeholder="••••••••••••"
+                    />
+                    <ion-icon class="eye" id="register-eye" name="eye-off-outline"></ion-icon>
+                  </div>
+                  <p class="error-msg" id="password-error-msg">
+                    Password must be at least 8 characters long
+                  </p>
+                </div>
+                <div class="item terms">
+                  <div class="input checkbox">
+                    <input type="checkbox" name="" id="accept" />
+                    <label for="accept">
+                      I accept the <a href="#">terms of service</a> and
+                      <a href="#">privacy policy</a>
+                    </label>
+                  </div>
+                  <p class="error-msg" id="terms-error-msg">
+                    You must accept the terms and conditions
+                  </p>
+                </div>
+                <div class="item">
+                  <button type="submit" class="btn">Register</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="page" id="second">
+      <div class="front">
+        <div class="outer">
+          <div class="content">
+            <img src="bg.png" alt="" />
+          </div>
+        </div>
+      </div>
+      <div class="back" id="third">
+        <div class="outer">
+          <div class="content">
+            <div class="helper-class">
+              <img src="bg.png" alt="" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="page" id="fourth">
+      <div class="front">
+        <div class="outer">
+          <div class="content">
+            <div class="form-wrapper">
+              <h1 class="heading">Welcome Back</h1>
+              <p class="login-link">
+                Need an account
+                <a href="#" class="register-btn">Register</a>
+              </p>
+              <form action="#" id="login-form">
+                <div class="item">
+                  <label for="login-email">Email address</label>
+                  <div class="input">
+                    <ion-icon name="mail-outline"></ion-icon>
+                    <input
+                      type="text"
+                      id="login-email"
+                      placeholder="example@mail.com"
+                    />
+                  </div>
+                  <p class="error-msg" id="login-email-error-msg">Please enter a valid email address</p>
+                </div>
+                <div class="item">
+                  <label for="login-password">Password</label>
+                  <div class="input">
+                    <ion-icon name="lock-closed-outline"></ion-icon>
+                    <input
+                      type="password"
+                      id="login-password"
+                      placeholder="••••••••••••"
+                    />
+                    <ion-icon class="eye" id="login-eye" name="eye-off-outline"></ion-icon>
+                  </div>
+                  <p class="error-msg" id="login-password-error-msg">Password or Email is incorrect</p>
+                </div>
+                <div class="item terms">
+                  <div class="input checkbox">
+                    <input type="checkbox" name="" id="remember" />
+                    <label for="remember"> Remember me </label>
+                  </div>
+                </div>
+                <div class="item">
+                  <button type="../new/page.html" class="btn">Login</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const loginBtn = document.querySelector(".login-btn");
+    const registerBtn = document.querySelector(".register-btn");
+
+    loginBtn.addEventListener("click", flipForward);
+    registerBtn.addEventListener("click", flipBackward);
+
+    const first = document.getElementById("first");
+    const second = document.getElementById("second");
+
+    function flipForward() {
+      if (window.innerWidth < 700) {
+        first.style.left = "0";
+      } else {
+        second.style.transform = "rotateY(-180deg)";
+      }
+    }
+    function flipBackward() {
+      if (window.innerWidth < 700) {
+        first.style.left = "100%";
+      } else {
+        second.style.transform = "rotateY(0)";
+      }
+    }
+    window.addEventListener("resize", () => {
+      if (window.innerWidth < 700) {
+        first.style.left = "0";
+      } else {
+        first.style.left = "50%";
+      }
+    });
+
+    // Password Visibility Toggle
+    const registerEyeIcon = document.getElementById('register-eye');
+    const loginEyeIcon = document.getElementById('login-eye');
+    const registerPasswordField = document.getElementById('password');
+    const loginPasswordField = document.getElementById('login-password');
+
+    registerEyeIcon.addEventListener('click', () => {
+      togglePasswordVisibility(registerEyeIcon, registerPasswordField);
+    });
+
+    loginEyeIcon.addEventListener('click', () => {
+      togglePasswordVisibility(loginEyeIcon, loginPasswordField);
+    });
+
+    function togglePasswordVisibility(eyeIcon, passwordField) {
+      const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+      passwordField.setAttribute('type', type);
+      eyeIcon.name = type === 'password' ? 'eye-off-outline' : 'eye-outline';
+    }
+  </script>
+
+  <!-- Ionicons -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ionicons/5.0.1/ionicons.min.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+    import { getDatabase, ref, set, update } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+    
+    const firebaseConfig = {
+        apiKey: "AIzaSyBTpHbTGwsZ4BMS4IR3OM7KuX-H28J5GZA",
+      authDomain: "authentication-cfd92.firebaseapp.com",
+      databaseURL: "https://authentication-cfd92-default-rtdb.firebaseio.com",
+      projectId: "authentication-cfd92",
+      storageBucket: "authentication-cfd92.appspot.com",
+      messagingSenderId: "189064423810",
+      appId: "1:189064423810:web:3d99083845214f759d879b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const auth = getAuth();
+
+    const registerForm = document.getElementById('register-form');
+    const loginForm = document.getElementById('login-form');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const termsCheckbox = document.getElementById('accept');
+    const emailErrorMsg = document.getElementById('email-error-msg');
+    const passwordErrorMsg = document.getElementById('password-error-msg');
+    const termsErrorMsg = document.getElementById('terms-error-msg');
+
+    registerForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const email = emailInput.value;
+      const password = passwordInput.value;
+
+      if (!isValidEmail(email)) {
+        emailErrorMsg.style.display = 'block';
+        return;
+      }
+      emailErrorMsg.style.display = 'none';
+
+      if (password.length < 8) {
+        passwordErrorMsg.style.display = 'block';
+        return;
+      }
+      passwordErrorMsg.style.display = 'none';
+
+      if (!termsCheckbox.checked) {
+        termsErrorMsg.style.display = 'block';
+        return;
+      }
+      termsErrorMsg.style.display = 'none';
+
+      createUserWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          sendEmailVerification(auth.currentUser)
+            .then(() => {
+              Swal.fire({
+              icon: "info",
+              title: "Verify Email",
+              text: "A link is sent to your email for verification",
+            });
+            });
+          const user = userCredential.user;
+          Swal.fire({
+          position: "center",
+          icon: "success",
+          title: "User Created",
+          showConfirmButton: false,
+          timer: 1500
+        });
+          const userRef = ref(database, 'users/' + user.uid);
+          set(userRef, {
+            email: email,
+            registrationDate: new Date().toISOString()
+          });
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          // alert(errorMessage);
+          Swal.fire({
+              icon: "error",
+              title: "Oops...",
+              text: errorMessage,
+            });
+        });
+    });
+
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+
+      signInWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          const user = userCredential.user;
+          if (!user.emailVerified) {
+              Swal.fire({
+              icon: "error",
+              title: "Oops...",
+              text: "Please verify your email before logging in",
+            });
+            return;
+          }
+          
+          const dt = new Date();
+          update(ref(database, 'users/' + user.uid), {
+            last_login: dt,
+          });
+          Swal.fire({
+          position: "center",
+          icon: "success",
+          title: "User Logged In!",
+          showConfirmButton: false,
+          timer: 1500
+        });
+        window.location.assign("../new/page.html");
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          // alert(errorMessage);
+          Swal.fire({
+              icon: "error",
+              title: "Oops...",
+              text: errorMessage,
+            });
+        });
+    });
+
+    function isValidEmail(email) {
+      return /\S+@\S+\.\S+/.test(email);
+    }
+  </script>
+</body>
+</html>
