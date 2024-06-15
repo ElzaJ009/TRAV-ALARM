@@ -1,1 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WE WILL REMIND YOU</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-image: url("2.png");
+        }
+
+        .container {
+            width: 90%;
+            max-width: 500px;
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            overflow: hidden;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 28px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="time"]{
+            border: 1px solid #f27900;
+            width: calc(100% - 20px);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 25px;
+            background-color: rgba(255, 255, 255, 0.8);
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        label, input, button {
+            margin: 10px 0;
+            box-sizing: border-box;
+            display: block;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            color: #555;
+        }
+
+        th {
+            background-color: #f27900; /* Different shade of orange */
+            color: #fff;
+            text-transform: uppercase;
+            font-size: 14px;
+        }
+        .delete-button {
+            background-color: #ff5f5f;
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .delete-button:hover {
+            background-color: #ff8585;
+        }
+
+        button {
+            width: calc(100% - 20px);
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 25px;
+            background-color: rgba(255, 255, 255, 0.8);
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        input[type="time"]:focus{
+            border: 1px solid #f27900;
+        }
+        button:focus {
+            outline: none;
+            background-color: #f27900;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        button {
+            background-color: #f27900; /* Different shade of orange */
+            color: #fff;
+            cursor: pointer;
+            transition: none; /* Remove transition effect */
+        }
+
+        button:hover {
+            border: 1px solid #f27900;
+            background-color: #fff; /* Ensure background color remains the same on hover */
+            color: #f27900;
+        }
+
+        /* Add this style to keep the button always visible */
+        button#setReminderButton {
+            visibility: visible !important; /* Ensure the button is always visible */
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2 style="text-align: center">Life is all about discovering new tastes</h2>
+    <label for="title">Title :</label>
+    <input type="text" id="title" />
+    <label for="description">Description :</label>
+    <input type="text" id="description" />
+    <label for="date">Date :</label>
+    <input type="date" id="date" />
+    <label for="time">Time :</label>
+    <input type="time" id="time" />
+
+    <button onclick="scheduleReminder();">Schedule Reminder</button>
+
+    <table border="1">
+        <thead>
+        <tr>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Date & Time</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody id="reminderTableBody"></tbody>
+    </table>
+</div>
+<audio src="notificationsoundeffect.mp3" id="notificationsound"></audio>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js').then(function (registration) {
+            console.log('Service Worker registered with scope:', registration.scope);
+        }).catch(function (error) {
+            console.log('Service Worker registration failed:', error);
+        });
+    }
+
+    if ("Notification" in window) {
+        Notification.requestPermission().then(function (permission) {
+            if (Notification.permission !== "granted") {
+                alert("Please allow notification access!");
+            }
+        });
+    }
+
+    var timeoutIds = [];
+
+    function scheduleReminder() {
+        var title = document.getElementById("title").value;
+        var description = document.getElementById("description").value;
+        var date = document.getElementById("date").value;
+        var time = document.getElementById("time").value;
+
+        var dateTimeString = date + " " + time;
+        var scheduledTime = new Date(dateTimeString);
+        var currentTime = new Date();
+        var timeDifference = scheduledTime - currentTime;
+
+        if (timeDifference > 0) {
+            addReminder(title, description, dateTimeString);
+
+            var timeoutId = setTimeout(function () {
+                navigator.serviceWorker.ready.then(function (registration) {
+                    registration.showNotification(title, {
+                        body: description,
+                        requireInteraction: true,
+                    });
+                    document.getElementById("notificationsound").play();
+                    deleteReminderButton();
+                });
+            }, timeDifference);
+
+            timeoutIds.push(timeoutId);
+            // alert("You will be notified") ;
+            notification.onclick = function () {
+                    window.open('list-of-restaurants.html')}
+            //alert("You will be notified") ;       
+
+        } else {
+            Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: "The scheduled time is in the past",
+            });
+        }
+    }
+
+    function addReminder(title, description, dateTimeString) {
+        var TableBody = document.getElementById("reminderTableBody");
+
+        var row = TableBody.insertRow();
+
+        var titleCell = row.insertCell(0);
+        var descriptionCell = row.insertCell(1);
+        var dateTimeCell = row.insertCell(2);
+        var actionCell = row.insertCell(3);
+
+        titleCell.innerHTML = title;
+        descriptionCell.innerHTML = description;
+        dateTimeCell.innerHTML = dateTimeString;
+        actionCell.innerHTML = '<button class="delete-button" onclick="deleteReminder(this);">Delete</button>';
+    }
+
+    function deleteReminder(button) {
+        var row = button.closest("tr");
+        var index = row.rowIndex;
+
+        clearTimeout(timeoutIds[index - 1]);
+        timeoutIds.splice(index - 1, 1);
+
+        row.remove();
+    }
+    function deleteReminderButton(){
+        var deleteButton=document.querySelector(".delete-button");
+        if(deleteButton){
+            deleteReminder(deleteButton);
+        }
+    }
+</script>
+</body>
+</html>
+
 
