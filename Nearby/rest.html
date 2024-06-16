@@ -1,4 +1,4 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -164,7 +164,6 @@
         <tbody id="reminderTableBody"></tbody>
     </table>
 </div>
-<!-- Audio reference for notification sound -->
 <audio src="aud.mp3" id="notificationsound"></audio>
 
 <script>
@@ -206,9 +205,13 @@
                         body: description,
                         requireInteraction: true,
                     });
-                    // Play notification sound
-                    document.getElementById("notificationsound").play();
-                    deleteReminderButton();
+                    var audio=document.getElementById("notificationsound");
+                    if(audio) {
+                        audio.play();
+                        audio.onended=function(){
+                            deleteReminderButton();
+                    }
+                }
                 });
             }, timeDifference);
 
