@@ -23,6 +23,7 @@
             border: 1px solid #ccc;
             overflow: hidden; /* Ensure photos don't overflow */
             background-color: #f9f9f9;
+            cursor: pointer;
         }
 
         /* Style for restaurant name */
@@ -57,6 +58,40 @@
         h1 {
             color: #333;
         }
+
+        /* Style for the details popup */
+        #restaurant-details {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            padding: 20px;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        #restaurant-details h2 {
+            margin: 0 0 10px;
+            font-size: 24px;
+            color: #333;
+        }
+
+        #restaurant-details p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        #close-details {
+            background: #f27900;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            float: right;
+        }
     </style>
 </head>
 <body>
@@ -67,10 +102,21 @@
     <!-- Restaurant list -->
     <ul id="restaurant-list"></ul>
 
+    <!-- Restaurant details popup -->
+    <div id="restaurant-details">
+        <button id="close-details" onclick="closeDetails()">Close</button>
+        <h2 id="details-name"></h2>
+        <p id="details-address"></p>
+        <p id="details-phone"></p>
+        <p id="details-rating"></p>
+    </div>
+
     <!-- Load the Google Maps JavaScript API and Places library -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAwjNkVZ0mr30RDn-X84NCq7QbfHvUCxMI&libraries=places&callback=initMap" async defer></script>
 
     <script>
+        var map, service;
+
         // Initialize and display the map
         function initMap() {
             // Try HTML5 geolocation.
@@ -81,12 +127,12 @@
                         lng: position.coords.longitude
                     };
 
-                    var map = new google.maps.Map(document.getElementById('map'), {
+                    map = new google.maps.Map(document.getElementById('map'), {
                         center: userLocation, // Center the map on the user's current location
                         zoom: 15 // Set the initial zoom level
                     });
 
-                    var service = new google.maps.places.PlacesService(map);
+                    service = new google.maps.places.PlacesService(map);
 
                     var request = {
                         location: userLocation, // Search around the user's current location
@@ -96,40 +142,6 @@
 
                     service.nearbySearch(request, callback);
 
-                    function callback(results, status) {
-                        if (status === google.maps.places.PlacesServiceStatus.OK) {
-                            var restaurantList = document.getElementById('restaurant-list');
-
-                            for (var i = 0; i < results.length; i++) {
-                                createMarker(results[i]);
-
-                                // Add restaurant details to the list
-                                var listItem = document.createElement('li');
-                                listItem.className = 'restaurant-item';
-                                var restaurantName = document.createElement('div');
-                                restaurantName.className = 'restaurant-name';
-                                restaurantName.textContent = results[i].name;
-                                var restaurantAddress = document.createElement('div');
-                                restaurantAddress.className = 'restaurant-address';
-                                restaurantAddress.textContent = results[i].vicinity;
-                                var restaurantPhoto = document.createElement('img');
-                                restaurantPhoto.className = 'restaurant-photo';
-                                restaurantPhoto.src = results[i].photos ? results[i].photos[0].getUrl({maxWidth: 100, maxHeight: 100}) : 'no-photo.jpg';
-                                listItem.appendChild(restaurantPhoto);
-                                listItem.appendChild(restaurantName);
-                                listItem.appendChild(restaurantAddress);
-                                restaurantList.appendChild(listItem);
-                            }
-                        }
-                    }
-
-                    function createMarker(place) {
-                        var marker = new google.maps.Marker({
-                            map: map,
-                            position: place.geometry.location,
-                            title: place.name
-                        });
-                    }
                 }, function() {
                     handleLocationError(true);
                 });
@@ -139,6 +151,71 @@
             }
         }
 
+        function callback(results, status) {
+            if (status === google.maps.places.PlacesServiceStatus.OK) {
+                var restaurantList = document.getElementById('restaurant-list');
+
+                for (var i = 0; i < results.length; i++) {
+                    createMarker(results[i]);
+
+                    // Add restaurant details to the list
+                    var listItem = document.createElement('li');
+                    listItem.className = 'restaurant-item';
+                    listItem.onclick = (function(placeId) {
+                        return function() {
+                            showDetails(placeId);
+                        };
+                    })(results[i].place_id);
+
+                    var restaurantName = document.createElement('div');
+                    restaurantName.className = 'restaurant-name';
+                    restaurantName.textContent = results[i].name;
+
+                    var restaurantAddress = document.createElement('div');
+                    restaurantAddress.className = 'restaurant-address';
+                    restaurantAddress.textContent = results[i].vicinity;
+
+                    var restaurantPhoto = document.createElement('img');
+                    restaurantPhoto.className = 'restaurant-photo';
+                    restaurantPhoto.src = results[i].photos ? results[i].photos[0].getUrl({maxWidth: 100, maxHeight: 100}) : 'no-photo.jpg';
+
+                    listItem.appendChild(restaurantPhoto);
+                    listItem.appendChild(restaurantName);
+                    listItem.appendChild(restaurantAddress);
+                    restaurantList.appendChild(listItem);
+                }
+            }
+        }
+
+        function createMarker(place) {
+            var marker = new google.maps.Marker({
+                map: map,
+                position: place.geometry.location,
+                title: place.name
+            });
+        }
+
+        function showDetails(placeId) {
+            var request = {
+                placeId: placeId,
+                fields: ['name', 'formatted_address', 'formatted_phone_number', 'rating']
+            };
+
+            service.getDetails(request, function(place, status) {
+                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    document.getElementById('details-name').textContent = place.name;
+                    document.getElementById('details-address').textContent = 'Address: ' + place.formatted_address;
+                    document.getElementById('details-phone').textContent = 'Phone: ' + place.formatted_phone_number;
+                    document.getElementById('details-rating').textContent = 'Rating: ' + place.rating;
+                    document.getElementById('restaurant-details').style.display = 'block';
+                }
+            });
+        }
+
+        function closeDetails() {
+            document.getElementById('restaurant-details').style.display = 'none';
+        }
+
         function handleLocationError(browserHasGeolocation) {
             var errorMsg = browserHasGeolocation ? 'The Geolocation service failed.' : 'Your browser doesn\'t support geolocation.';
             alert(errorMsg);
@@ -146,3 +223,4 @@
     </script>
 </body>
 </html>
+
