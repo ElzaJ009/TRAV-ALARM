@@ -32,8 +32,11 @@
         .button.full-screen {
             background-color: #008CBA; /* Blue */
         }
-        .button.start-stop {
-            background-color: #f44336; /* Red */
+        .button.start-stop.start {
+            background-color: #008CBA; /* Blue for Start */
+        }
+        .button.start-stop.stop {
+            background-color: #f44336; /* Red for Stop */
         }
         .coordinate {
             text-align: center;
@@ -47,7 +50,7 @@
     <div id="map"></div>
     <div class="buttons-container">
         <button class="button full-screen" onclick="fullScreenView()">View in full screen</button>
-        <button class="button start-stop" onclick="toggleSelection()">Start</button>
+        <button class="button start-stop start" onclick="toggleSelection()">Start</button>
     </div>
     <div class="coordinate"></div>
 
@@ -57,8 +60,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script>
-        var map = L.map('map').setView([38.8610, 71.2761], 7);
+        var map = L.map('map').setView([38.8610, 71.2761], 10);
         var track;
+        var updateCounter = 0;
         map.zoomControl.setPosition('topright');
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -83,9 +87,9 @@
         function toggleSelection() {
             if (!destLatitude || !destLongitude) {
                 Swal.fire({
-                icon: "error",
-                title: "No Destination",
-                text: "Please select a destination"
+                    icon: "error",
+                    title: "No Destination",
+                    text: "Please select a destination"
                 });
                 return;
             }
@@ -98,7 +102,10 @@
 
         function startSelection() {
             selectionStarted = true;
-            $('.button.start-stop').text('Stop');
+            var startStopButton = document.querySelector('.button.start-stop');
+            startStopButton.textContent = 'Stop';
+            startStopButton.classList.remove('start');
+            startStopButton.classList.add('stop');
             map.off('click');
             getCurrentLocation();
         }
@@ -106,32 +113,20 @@
         function stopSelection() {
             clearInterval(track);
             selectionStarted = false;
-            $('.button.start-stop').text('Start');
-            // map.off('click', moveBlueMarker);
+            var startStopButton = document.querySelector('.button.start-stop');
+            startStopButton.textContent = 'Start';
+            startStopButton.classList.remove('stop');
+            startStopButton.classList.add('start');
             removeBlueMarker();
             currentLatitude = null;
             currentLongitude = null;
             map.on('click', handleMapClick);
-            // $('.coordinate').html(`Destination Latitude: ${destLatitude} Destination Longitude: ${destLongitude}`);
         }
-
-        // function moveBlueMarker(e) {
-        //     currentLatitude = e.latlng.lat;
-        //     currentLongitude = e.latlng.lng;
-        //     checkWithinRadius(); // Check if within 500m radius
-        //     $('.coordinate').html(`Destination Latitude: ${destLatitude} Destination Longitude: ${destLongitude}<br> Current Latitude: ${currentLatitude} Current Longitude: ${currentLongitude}<br>Status: ${withinRadius}`);
-        //     blueMarker.setLatLng([currentLatitude, currentLongitude]);
-        //     if (withinRadius) {
-        //         Swal.fire("Destination arrived!");
-        //         audio.play();
-        //     }
-        // }
 
         function handleMapClick(e) {
             console.log(e);
             destLatitude = e.latlng.lat;
             destLongitude = e.latlng.lng;
-            // $('.coordinate').html(`Destination Latitude: ${destLatitude} Destination Longitude: ${destLongitude}`);
             if (marker) {
                 map.removeLayer(marker); // Remove the existing marker
             }
@@ -172,14 +167,13 @@
 
         function getCurrentLocation() {
             if (navigator.geolocation) {
-                track=setInterval(() =>{
+                track = setInterval(() => {
                     navigator.geolocation.getCurrentPosition(getPosition)
                 }, 1000);
             } else {
                 console.error('Geolocation is not supported by this browser.');
             }
         }
-
 
         function getPosition(position) {
             var latlng = L.latLng(position.coords.latitude, position.coords.longitude);
@@ -191,24 +185,22 @@
                 map.removeLayer(blueMarker)
             }
             addBlueMarker(latlng);
-            map.setView(latlng, 13);
-            // blueMarker = L.marker([currentLatitude, currentLongitude])
-            // var featureGroup = L.featureGroup([blueMarker]).addTo(map)
-            // map.fitBounds(featureGroup.getBounds())
+
+            // Recenter map every 5 seconds
+            if (updateCounter % 5 === 0) {
+                map.setView(latlng, 15); // Increase zoom level for more zoomed-in view
+            }
+            updateCounter++;
 
             checkWithinRadius(); // Check if within 500m radius
-            // $('.coordinate').html(`Destination Latitude: ${destLatitude} Destination Longitude: ${destLongitude}<br> Current Latitude: ${currentLatitude} Current Longitude: ${currentLongitude}<br>Status: ${withinRadius}`);
             if (withinRadius) {
                 clearInterval(track);
                 Swal.fire("Destination arrived!");
                 audio.play();
             }
-            // map.on('click', moveBlueMarker); // Bind moveBlueMarker function to map click event
-                
 
             console.log("Your coordinate is: Lat: " + currentLatitude + " Long: " + currentLongitude + " Accuracy: " + accuracy)
         }
-
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
             var R = 6371; // Radius of the Earth in km
@@ -242,7 +234,7 @@
         L.Control.geocoder({
             defaultMarkGeocode: false,
             collapsed: false
-        }).on('markgeocode', function(e) {
+        }).on('markgeocode', function (e) {
             if (marker) {
                 map.removeLayer(marker); // Remove the existing marker
             }
@@ -259,10 +251,8 @@
                     shadowSize: [41, 41]
                 })
             }).addTo(map);
-            map.setView(latlng, 13);
-            // $('.coordinate').html(`Destination Latitude: ${destLatitude} Destination Longitude: ${destLongitude}`);
+            map.setView(latlng, 15); // Increase zoom level for more zoomed-in view
         }).addTo(map);
-
     </script>
 </body>
 </html>
