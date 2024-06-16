@@ -38,9 +38,8 @@
             text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
         }
 
-        input[type="text"],
         input[type="date"],
-        input[type="time"]{
+        input[type="time"] {
             border: 1px solid #f27900;
             width: calc(100% - 20px);
             padding: 15px;
@@ -69,8 +68,7 @@
             margin-top: 20px;
         }
 
-        th,
-        td {
+        th, td {
             padding: 15px;
             border-bottom: 1px solid #ddd;
             color: #555;
@@ -82,6 +80,7 @@
             text-transform: uppercase;
             font-size: 14px;
         }
+
         .delete-button {
             background-color: #ff5f5f;
             color: #fff;
@@ -108,11 +107,11 @@
             transition: 0.3s;
         }
 
-        input[type="text"]:focus,
         input[type="date"]:focus,
-        input[type="time"]:focus{
+        input[type="time"]:focus {
             border: 1px solid #f27900;
         }
+
         button:focus {
             outline: none;
             background-color: #f27900;
@@ -141,10 +140,6 @@
 <body>
 <div class="container">
     <h2 style="text-align: center">Life is all about discovering new tastes</h2>
-    <label for="title">Title :</label>
-    <input type="text" id="title" />
-    <label for="description">Description :</label>
-    <input type="text" id="description" />
     <label for="date">Date :</label>
     <input type="date" id="date" />
     <label for="time">Time :</label>
@@ -155,8 +150,6 @@
     <table border="1">
         <thead>
         <tr>
-            <th>Title</th>
-            <th>Description</th>
             <th>Date & Time</th>
             <th>Action</th>
         </tr>
@@ -164,6 +157,7 @@
         <tbody id="reminderTableBody"></tbody>
     </table>
 </div>
+<!-- Audio reference for notification sound -->
 <audio src="aud.mp3" id="notificationsound"></audio>
 
 <script>
@@ -186,8 +180,6 @@
     var timeoutIds = [];
 
     function scheduleReminder() {
-        var title = document.getElementById("title").value;
-        var description = document.getElementById("description").value;
         var date = document.getElementById("date").value;
         var time = document.getElementById("time").value;
 
@@ -197,21 +189,17 @@
         var timeDifference = scheduledTime - currentTime;
 
         if (timeDifference > 0) {
-            addReminder(title, description, dateTimeString);
+            addReminder(dateTimeString);
 
             var timeoutId = setTimeout(function () {
                 navigator.serviceWorker.ready.then(function (registration) {
-                    registration.showNotification(title, {
-                        body: description,
+                    registration.showNotification("Reminder", {
+                        body: "It's time!",
                         requireInteraction: true,
                     });
-                    var audio=document.getElementById("notificationsound");
-                    if(audio) {
-                        audio.play();
-                        audio.onended=function(){
-                            deleteReminderButton();
-                    }
-                }
+                    // Play notification sound
+                    document.getElementById("notificationsound").play();
+                    deleteReminderButton();
                 });
             }, timeDifference);
 
@@ -230,18 +218,14 @@
         }
     }
 
-    function addReminder(title, description, dateTimeString) {
+    function addReminder(dateTimeString) {
         var TableBody = document.getElementById("reminderTableBody");
 
         var row = TableBody.insertRow();
 
-        var titleCell = row.insertCell(0);
-        var descriptionCell = row.insertCell(1);
-        var dateTimeCell = row.insertCell(2);
-        var actionCell = row.insertCell(3);
+        var dateTimeCell = row.insertCell(0);
+        var actionCell = row.insertCell(1);
 
-        titleCell.innerHTML = title;
-        descriptionCell.innerHTML = description;
         dateTimeCell.innerHTML = dateTimeString;
         actionCell.innerHTML = '<button class="delete-button" onclick="deleteReminder(this);">Delete</button>';
     }
