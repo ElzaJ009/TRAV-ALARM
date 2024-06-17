@@ -109,21 +109,33 @@
             sessionStorage.clear();
             localStorage.clear();
 
+            // Set a flag to indicate that the user has logged out
+            localStorage.setItem('loggedOut', 'true');
+
             // Redirect to the login page or home page
             window.location.href = '../index.html';
 
-            // Add history state to prevent back navigation
+            // Manipulate browser history
             setTimeout(function() {
                 history.pushState(null, null, '../index.html');
                 history.replaceState(null, null, '../index.html');
             }, 0);
+        }
 
-            // Add event listener to handle back navigation
+        window.addEventListener('load', function() {
+            // Check if the user has logged out
+            if (localStorage.getItem('loggedOut') === 'true') {
+                // Clear the logged out flag
+                localStorage.removeItem('loggedOut');
+                // Redirect to the login page or home page
+                window.location.href = '../index.html';
+            }
+
+            // Prevent back navigation to the previous page
             window.addEventListener('popstate', function () {
                 history.pushState(null, null, '../index.html');
             });
-        }
+        });
     </script>
 </body>
 </html>
-
