@@ -116,25 +116,22 @@
             window.location.href = '../index.html';
 
             // Manipulate browser history
-            setTimeout(function() {
-                history.pushState(null, null, '../index.html');
-                history.replaceState(null, null, '../index.html');
-            }, 0);
+            history.pushState(null, null, '../index.html');
         }
 
         window.addEventListener('load', function() {
             // Check if the user has logged out
             if (localStorage.getItem('loggedOut') === 'true') {
-                // Clear the logged out flag
-                localStorage.removeItem('loggedOut');
                 // Redirect to the login page or home page
                 window.location.href = '../index.html';
             }
+        });
 
-            // Prevent back navigation to the previous page
-            window.addEventListener('popstate', function () {
+        // Prevent back navigation
+        window.addEventListener('popstate', function(event) {
+            if (localStorage.getItem('loggedOut') === 'true') {
                 history.pushState(null, null, '../index.html');
-            });
+            }
         });
     </script>
 </body>
