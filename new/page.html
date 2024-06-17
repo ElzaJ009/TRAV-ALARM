@@ -112,8 +112,13 @@
             // Redirect to the login page
             window.location.href = 'logout.html';
 
-            // Clear the browser history
-            history.pushState(null, null, 'logout.html');
+            // Add history state to prevent back navigation
+            setTimeout(function() {
+                history.pushState(null, null, 'logout.html');
+                history.replaceState(null, null, 'logout.html');
+            }, 0);
+
+            // Add event listener to handle back navigation
             window.addEventListener('popstate', function () {
                 history.pushState(null, null, 'logout.html');
             });
@@ -122,3 +127,4 @@
 
 </body>
 </html>
+
