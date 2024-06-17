@@ -56,26 +56,17 @@
             color: #fff; /* Red for Stop */
             background-color: #d71709;
         }
-        .coordinate {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 18px;
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
     <div id="map"></div>
     <div class="buttons-container">
-        <!-- <button class="button full-screen" onclick="fullScreenView()">View in full screen</button> -->
         <button class="button start-stop start" onclick="toggleSelection()">Start</button>
     </div>
-    <div class="coordinate"></div>
 
     <audio id="audio" src="alarm.mp3" preload="auto" onended="stopSelection()"></audio>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script>
         var map = L.map('map').setView([33.565313,77.373241], 3);
