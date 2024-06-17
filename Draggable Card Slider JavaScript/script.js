@@ -6,14 +6,6 @@ const carouselChildrens = [...carousel.children];
 
 let isDragging = false, isAutoPlay = true, startX, startScrollLeft, timeoutId;
 
-// URLs for each card
-const cardUrls = [
-    'hotels.html',       // URL for the Hotels card
-    'medicalshops.html', // URL for the Medical shops card
-    'coffee.html',       // URL for the Coffee card
-    'petrolpumps.html'   // URL for the Petrol Pumps card
-];
-
 // Get the number of cards that can fit in the carousel at once
 let cardPerView = Math.round(carousel.offsetWidth / firstCardWidth);
 
@@ -92,8 +84,8 @@ wrapper.addEventListener("mouseenter", () => clearTimeout(timeoutId));
 wrapper.addEventListener("mouseleave", autoPlay);
 
 // Add click event listeners to each card
-carousel.querySelectorAll(".card").forEach((card, index) => {
+carousel.querySelectorAll(".card").forEach(card => {
     card.addEventListener("click", () => {
-        window.location.href = cardUrls[index % cardUrls.length];
+        window.location.href = card.dataset.url;
     });
 });
