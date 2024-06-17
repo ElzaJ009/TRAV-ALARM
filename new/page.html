@@ -109,22 +109,21 @@
             sessionStorage.clear();
             localStorage.clear();
 
-            // Redirect to the login page
-            window.location.href = 'logout.html';
+            // Redirect to the login page or home page
+            window.location.href = '../index.html';
 
             // Add history state to prevent back navigation
             setTimeout(function() {
-                history.pushState(null, null, 'logout.html');
-                history.replaceState(null, null, 'logout.html');
+                history.pushState(null, null, '../index.html');
+                history.replaceState(null, null, '../index.html');
             }, 0);
 
             // Add event listener to handle back navigation
             window.addEventListener('popstate', function () {
-                history.pushState(null, null, 'logout.html');
+                history.pushState(null, null, '../index.html');
             });
         }
     </script>
-
 </body>
 </html>
 
