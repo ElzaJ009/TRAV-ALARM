@@ -163,7 +163,7 @@
         var date = document.getElementById("date").value;
         var time = document.getElementById("time").value;
 
-        var dateTimeString = date + " " + time; // Combine date and time with T separator
+        var dateTimeString = date + " " + time; // Combine date and time with separator
         var scheduledTime = new Date(dateTimeString);
         var currentTime = new Date();
         var timeDifference = scheduledTime - currentTime;
@@ -172,35 +172,13 @@
             addReminder(title, description, dateTimeString);
 
             setTimeout(function () {
-                var audio = document.getElementById("notificationSound");
-                if(audio) {
-                    audio.play();
-                    audio.onended=function(){
-                        deleteReminderButton();
-                    }
-                }
-
-                if (Notification.permission === "granted") {
-                    var notification = new Notification("Reminder", {
-                        body: title + ": " + description,
-                        icon: "notification_icon.png"
-                    });
-                } else if (Notification.permission !== 'denied') {
-                    Notification.requestPermission().then(function(permission) {
-                        if(permission === "granted") {
-                            var notification = new Notification("Reminder", {
-                                body: title + ": " + description,
-                                icon: "notification_icon.png"
-                            });
-                        }
-                    });
-                }
+                triggerAlarm(title, description, dateTimeString);
             }, timeDifference);
         } else {
             Swal.fire({
-            icon: "error",
-            title: "Oops...",
-            text: "The scheduled time is in the past",
+                icon: "error",
+                title: "Oops...",
+                text: "The scheduled time is in the past",
             });
         }
     }
@@ -216,19 +194,125 @@
         titleCell.innerHTML = title;
         descriptionCell.innerHTML = description;
         dateTimeCell.innerHTML = dateTimeString;
-        actionCell.innerHTML = '<button class="delete-button" onclick="deleteReminder(this);">Delete</button>';
+        actionCell.innerHTML = '<button class="delete-button" onclick="deleteReminder(this, \'' + dateTimeString + '\');">Delete</button>';
+
+        // Save to localStorage
+        saveRemindersToLocalStorage();
     }
 
-    function deleteReminder(button) {
+    function deleteReminder(button, dateTimeString) {
         var row = button.parentNode.parentNode;
         row.parentNode.removeChild(row);
+
+        // Mark reminder as deleted in localStorage
+        var deletedReminders = getDeletedRemindersFromLocalStorage();
+        deletedReminders.push(dateTimeString);
+        saveDeletedRemindersToLocalStorage(deletedReminders);
+
+        // Save to localStorage
+        saveRemindersToLocalStorage();
     }
-    function deleteReminderButton(){
-        var deleteButton=document.querySelector(".delete-button");
-        if(deleteButton){
-            deleteReminder(deleteButton);
+
+    function triggerAlarm(title, description, dateTimeString) {
+        var audio = document.getElementById("notificationSound");
+        if (audio) {
+            audio.play();
         }
+
+        if (Notification.permission === "granted") {
+            var notification = new Notification("Reminder", {
+                body: title + ": " + description,
+                icon: "notification_icon.png"
+            });
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then(function(permission) {
+                if (permission === "granted") {
+                    var notification = new Notification("Reminder", {
+                        body: title + ": " + description,
+                        icon: "notification_icon.png"
+                    });
+                }
+            });
+        }
+
+        // Remove expired reminders
+        removeExpiredReminders();
+        refreshReminderTable();
     }
+
+    function removeExpiredReminders() {
+        var reminders = getRemindersFromLocalStorage();
+        var currentTime = new Date();
+        reminders = reminders.filter(reminder => new Date(reminder.dateTimeString) > currentTime);
+        localStorage.setItem("reminders", JSON.stringify(reminders));
+
+        // Ensure deleted reminders are not considered for future alarms
+        var deletedReminders = getDeletedRemindersFromLocalStorage();
+        reminders = reminders.filter(reminder => !deletedReminders.includes(reminder.dateTimeString));
+        localStorage.setItem("reminders", JSON.stringify(reminders));
+    }
+
+    function saveRemindersToLocalStorage() {
+        var reminders = [];
+        var tableRows = document.getElementById("reminderTableBody").rows;
+        for (var i = 0; i < tableRows.length; i++) {
+            var row = tableRows[i];
+            var title = row.cells[0].innerHTML;
+            var description = row.cells[1].innerHTML;
+            var dateTimeString = row.cells[2].innerHTML;
+            reminders.push({ title, description, dateTimeString });
+        }
+        localStorage.setItem("reminders", JSON.stringify(reminders));
+    }
+
+    function getRemindersFromLocalStorage() {
+        return JSON.parse(localStorage.getItem("reminders")) || [];
+    }
+
+    function saveDeletedRemindersToLocalStorage(deletedReminders) {
+        localStorage.setItem("deletedReminders", JSON.stringify(deletedReminders));
+    }
+
+    function getDeletedRemindersFromLocalStorage() {
+        return JSON.parse(localStorage.getItem("deletedReminders")) || [];
+    }
+
+    function loadRemindersFromLocalStorage() {
+        var reminders = getRemindersFromLocalStorage();
+        var currentTime = new Date();
+
+        reminders.forEach(function(reminder, index) {
+            // Skip reminders that have been deleted
+            var deletedReminders = getDeletedRemindersFromLocalStorage();
+            if (deletedReminders.includes(reminder.dateTimeString)) return;
+
+            var scheduledTime = new Date(reminder.dateTimeString);
+            var timeDifference = scheduledTime - currentTime;
+
+            if (timeDifference > 0) {
+                addReminder(reminder.title, reminder.description, reminder.dateTimeString);
+                setTimeout(function () {
+                    triggerAlarm(reminder.title, reminder.description, reminder.dateTimeString);
+                }, timeDifference);
+            } else {
+                // Remove expired reminders
+                removeExpiredReminders();
+            }
+        });
+    }
+
+    function refreshReminderTable() {
+        var tableBody = document.getElementById("reminderTableBody");
+        tableBody.innerHTML = ""; // Clear table
+        loadRemindersFromLocalStorage();
+    }
+
+    // Load reminders when the page is loaded
+    window.onload = function() {
+        Notification.requestPermission();
+        refreshReminderTable();
+    };
 </script>
+
 </body>
 </html>
