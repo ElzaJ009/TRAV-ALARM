@@ -179,6 +179,27 @@
 
     var timeoutIds = [];
 
+    // Restore reminders and timeouts from localStorage
+    function restoreReminders() {
+        const reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+        reminders.forEach(reminder => {
+            addReminder(reminder.dateTimeString);
+            const timeDifference = new Date(reminder.dateTimeString) - new Date();
+            if (timeDifference > 0) {
+                const timeoutId = setTimeout(function () {
+                    showReminderNotification();
+                }, timeDifference);
+                timeoutIds.push(timeoutId);
+            }
+        });
+    }
+
+    // Save reminders to localStorage
+    function saveReminderToLocalStorage(reminders) {
+        localStorage.setItem('reminders', JSON.stringify(reminders));
+    }
+
+    // Function to schedule a new reminder
     function scheduleReminder() {
         var date = document.getElementById("date").value;
         var time = document.getElementById("time").value;
@@ -190,6 +211,10 @@
 
         if (timeDifference > 0) {
             addReminder(dateTimeString);
+
+            const reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+            reminders.push({ dateTimeString: dateTimeString });
+            saveReminderToLocalStorage(reminders);
 
             var timeoutId = setTimeout(function () {
                 navigator.serviceWorker.ready.then(function (registration) {
@@ -204,20 +229,16 @@
             }, timeDifference);
 
             timeoutIds.push(timeoutId);
-            // alert("You will be notified") ;
-            notification.onclick = function () {
-                    window.open('list-of-restaurants.html')}
-            //alert("You will be notified") ;       
-
         } else {
             Swal.fire({
-            icon: "error",
-            title: "Oops...",
-            text: "The scheduled time is in the past",
+                icon: "error",
+                title: "Oops...",
+                text: "The scheduled time is in the past",
             });
         }
     }
 
+    // Function to add a reminder to the table and localStorage
     function addReminder(dateTimeString) {
         var TableBody = document.getElementById("reminderTableBody");
 
@@ -230,6 +251,7 @@
         actionCell.innerHTML = '<button class="delete-button" onclick="deleteReminder(this);">Delete</button>';
     }
 
+    // Function to delete a reminder from the table and localStorage
     function deleteReminder(button) {
         var row = button.closest("tr");
         var index = row.rowIndex;
@@ -237,15 +259,62 @@
         clearTimeout(timeoutIds[index - 1]);
         timeoutIds.splice(index - 1, 1);
 
+        var reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+        reminders.splice(index - 1, 1);  // Remove the deleted reminder from localStorage
+        saveReminderToLocalStorage(reminders);
+
         row.remove();
     }
-    function deleteReminderButton(){
-        var deleteButton=document.querySelector(".delete-button");
-        if(deleteButton){
+
+    // Function to delete the first reminder (if any) by clicking on the delete button
+    function deleteReminderButton() {
+        var deleteButton = document.querySelector(".delete-button");
+        if (deleteButton) {
             deleteReminder(deleteButton);
         }
     }
+
+    // Function to show the reminder notification
+    function showReminderNotification() {
+        navigator.serviceWorker.ready.then(function (registration) {
+            registration.showNotification("Reminder", {
+                body: "It's time!",
+                requireInteraction: true,
+            });
+            // Play notification sound
+            document.getElementById("notificationsound").play();
+            deleteReminderButton();
+        });
+    }
+
+    // Check and delete expired reminders
+    function checkAndDeleteExpiredReminders() {
+        const reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+        const currentTime = new Date();
+
+        reminders.forEach((reminder, index) => {
+            const reminderTime = new Date(reminder.dateTimeString);
+            if (reminderTime <= currentTime) {
+                // Delete reminder if time has passed
+                deleteReminderFromLocalStorage(index);
+            }
+        });
+    }
+
+    // Function to delete reminder from localStorage
+    function deleteReminderFromLocalStorage(index) {
+        var reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+        reminders.splice(index, 1);
+        saveReminderToLocalStorage(reminders);
+    }
+
+    // Run checks and restore reminders on page load
+    window.onload = function () {
+        restoreReminders();
+        checkAndDeleteExpiredReminders();  // Clean up expired reminders
+    };
 </script>
+
 </body>
 </html>
 
