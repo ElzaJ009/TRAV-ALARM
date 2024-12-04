@@ -65,77 +65,55 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script>
-        var map = L.map('map').setView([33.565313,77.373241], 3);
-        var track;
-        var updateCounter = 0;
-        map.zoomControl.setPosition('topright');
+    var map = L.map('map').setView([38.8610, 71.2761], 10);
+    var track;
+    var updateCounter = 0;
+    map.zoomControl.setPosition('topright');
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
 
-        //var mapId = document.getElementById('map');
-        //function fullScreenView() {
-       //     mapId.requestFullscreen();
-    //}
+    var mapId = document.getElementById('map');
+    function fullScreenView() {
+        mapId.requestFullscreen();
+    }
 
-        var marker = null;
-        var blueMarker = null;
-        var selectionStarted = false;
-        var destLatitude = null;
-        var destLongitude = null;
-        var currentLatitude = null;
-        var currentLongitude = null;
-        var withinRadius = false; // Flag variable for within 500m radius
-        var audio = document.getElementById('audio');
+    var marker = null;
+    var blueMarker = null;
+    var selectionStarted = false;
 
-        function toggleSelection() {
-            if (!destLatitude || !destLongitude) {
-                Swal.fire({
-                    icon: "error",
-                    title: "No Destination",
-                    text: "Please select a destination"
-                });
-                return;
-            }
-            if (!selectionStarted) {
-                startSelection();
-            } else {
-                stopSelection();
-            }
-        }
+    // Variables to store coordinates
+    var destLatitude = null;
+    var destLongitude = null;
+    var currentLatitude = null;
+    var currentLongitude = null;
 
-        function startSelection() {
-            selectionStarted = true;
-            var startStopButton = document.querySelector('.button.start-stop');
-            startStopButton.textContent = 'Stop';
-            startStopButton.classList.remove('start');
-            startStopButton.classList.add('stop');
-            map.off('click');
-            getCurrentLocation();
-        }
+    // Flag variable for within 500m radius
+    var withinRadius = false;
+    var audio = document.getElementById('audio');
 
-        function stopSelection() {
-            clearInterval(track);
-            selectionStarted = false;
-            var startStopButton = document.querySelector('.button.start-stop');
-            startStopButton.textContent = 'Start';
-            startStopButton.classList.remove('stop');
-            startStopButton.classList.add('start');
-            removeBlueMarker();
-            currentLatitude = null;
-            currentLongitude = null;
-            map.on('click', handleMapClick);
-        }
+    // Function to save data to localStorage
+    function saveToLocalStorage(key, value) {
+        localStorage.setItem(key, JSON.stringify(value));
+    }
 
-        function handleMapClick(e) {
-            console.log(e);
-            destLatitude = e.latlng.lat;
-            destLongitude = e.latlng.lng;
-            if (marker) {
-                map.removeLayer(marker); // Remove the existing marker
-            }
-            marker = L.marker(e.latlng, {
+    // Function to get data from localStorage
+    function getFromLocalStorage(key) {
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : null;
+    }
+
+    // Restore saved coordinates and tracking state from localStorage on load
+    function restoreState() {
+        destLatitude = getFromLocalStorage('destLatitude');
+        destLongitude = getFromLocalStorage('destLongitude');
+        currentLatitude = getFromLocalStorage('currentLatitude');
+        currentLongitude = getFromLocalStorage('currentLongitude');
+        selectionStarted = getFromLocalStorage('selectionStarted');
+
+        if (destLatitude && destLongitude) {
+            marker = L.marker([destLatitude, destLongitude], {
                 draggable: false,
                 icon: L.icon({
                     iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
@@ -146,118 +124,215 @@
                     shadowSize: [41, 41]
                 })
             }).addTo(map);
+            map.setView([destLatitude, destLongitude], 15);
         }
 
-        function addBlueMarker(latlng) {
-            var blueIcon = L.icon({
-                iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+        if (currentLatitude && currentLongitude) {
+            var latlng = L.latLng(currentLatitude, currentLongitude);
+            addBlueMarker(latlng);
+        }
+
+        if (selectionStarted) {
+            // Resume tracking if it was previously started
+            startSelection();
+        }
+    }
+
+    restoreState(); // Restore state when the page loads
+
+    function toggleSelection() {
+        if (!destLatitude || !destLongitude) {
+            Swal.fire({
+                icon: "error",
+                title: "No Destination",
+                text: "Please select a destination"
+            });
+            return;
+        }
+        if (!selectionStarted) {
+            startSelection();
+        } else {
+            stopSelection();
+        }
+    }
+
+    function startSelection() {
+        selectionStarted = true;
+
+        // Save selection state to localStorage
+        saveToLocalStorage('selectionStarted', selectionStarted);
+
+        var startStopButton = document.querySelector('.button.start-stop');
+        startStopButton.textContent = 'Stop';
+        startStopButton.classList.remove('start');
+        startStopButton.classList.add('stop');
+        map.off('click');
+        getCurrentLocation();
+    }
+
+    function stopSelection() {
+        clearInterval(track);
+        selectionStarted = false;
+
+        // Save selection state to localStorage
+        saveToLocalStorage('selectionStarted', selectionStarted);
+
+        var startStopButton = document.querySelector('.button.start-stop');
+        startStopButton.textContent = 'Start';
+        startStopButton.classList.remove('stop');
+        startStopButton.classList.add('start');
+        removeBlueMarker();
+        currentLatitude = null;
+        currentLongitude = null;
+        map.on('click', handleMapClick);
+    }
+
+    function handleMapClick(e) {
+        destLatitude = e.latlng.lat;
+        destLongitude = e.latlng.lng;
+
+        // Save destination to localStorage
+        saveToLocalStorage('destLatitude', destLatitude);
+        saveToLocalStorage('destLongitude', destLongitude);
+
+        if (marker) {
+            map.removeLayer(marker);
+        }
+        marker = L.marker(e.latlng, {
+            draggable: false,
+            icon: L.icon({
+                iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
                 iconSize: [25, 41],
                 iconAnchor: [12, 41],
                 popupAnchor: [1, -34],
                 tooltipAnchor: [16, -28],
                 shadowSize: [41, 41]
-            });
-
-            blueMarker = L.marker(latlng, {
-                draggable: false, // Set to false to disable dragging
-                icon: blueIcon
-            }).addTo(map);
-        }
-
-        function removeBlueMarker() {
-            if (blueMarker) {
-                map.removeLayer(blueMarker);
-            }
-        }
-
-        function getCurrentLocation() {
-            if (navigator.geolocation) {
-                track = setInterval(() => {
-                    navigator.geolocation.getCurrentPosition(getPosition)
-                }, 1000);
-            } else {
-                console.error('Geolocation is not supported by this browser.');
-            }
-        }
-
-        function getPosition(position) {
-            var latlng = L.latLng(position.coords.latitude, position.coords.longitude);
-            currentLatitude = position.coords.latitude;
-            currentLongitude = position.coords.longitude;
-            var accuracy = position.coords.accuracy
-
-            if (blueMarker) {
-                map.removeLayer(blueMarker)
-            }
-            addBlueMarker(latlng);
-
-            // Recenter map every 5 seconds
-            if (updateCounter % 5 === 0) {
-                map.setView(latlng, 15); // Increase zoom level for more zoomed-in view
-            }
-            updateCounter++;
-
-            checkWithinRadius(); // Check if within 500m radius
-            if (withinRadius) {
-                clearInterval(track);
-                Swal.fire("Destination arrived!");
-                audio.play();
-            }
-
-            console.log("Your coordinate is: Lat: " + currentLatitude + " Long: " + currentLongitude + " Accuracy: " + accuracy)
-        }
-
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            var R = 6371; // Radius of the Earth in km
-            var dLat = deg2rad(lat2 - lat1);
-            var dLon = deg2rad(lon2 - lon1);
-            var a =
-                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2)
-                ;
-            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            var d = R * c; // Distance in km
-            return d;
-        }
-
-        function deg2rad(deg) {
-            return deg * (Math.PI / 180)
-        }
-
-        function checkWithinRadius() {
-            if (currentLatitude && currentLongitude && destLatitude && destLongitude) {
-                var distance = calculateDistance(currentLatitude, currentLongitude, destLatitude, destLongitude);
-                withinRadius = distance <= 0.5; // Within 500m radius (0.5km)
-            } else {
-                withinRadius = false;
-            }
-        }
-
-        map.on('click', handleMapClick);
-
-        L.Control.geocoder({
-            defaultMarkGeocode: false,
-            collapsed: false
-        }).on('markgeocode', function (e) {
-            if (marker) {
-                map.removeLayer(marker); // Remove the existing marker
-            }
-            var latlng = e.geocode.center;
-            destLatitude = latlng.lat;
-            destLongitude = latlng.lng;
-            marker = L.marker(latlng, {
-                icon: L.icon({
-                    iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-                    iconSize: [25, 41],
-                    iconAnchor: [12, 41],
-                    popupAnchor: [1, -34],
-                    tooltipAnchor: [16, -28],
-                    shadowSize: [41, 41]
-                })
-            }).addTo(map);
-            map.setView(latlng, 15); // Increase zoom level for more zoomed-in view
+            })
         }).addTo(map);
-    </script>
+    }
+
+    function addBlueMarker(latlng) {
+        var blueIcon = L.icon({
+            iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            tooltipAnchor: [16, -28],
+            shadowSize: [41, 41]
+        });
+
+        blueMarker = L.marker(latlng, {
+            draggable: false,
+            icon: blueIcon
+        }).addTo(map);
+    }
+
+    function removeBlueMarker() {
+        if (blueMarker) {
+            map.removeLayer(blueMarker);
+        }
+    }
+
+    function getCurrentLocation() {
+        if (navigator.geolocation) {
+            track = setInterval(() => {
+                navigator.geolocation.getCurrentPosition(getPosition)
+            }, 1000);
+        } else {
+            console.error('Geolocation is not supported by this browser.');
+        }
+    }
+
+    function getPosition(position) {
+        var latlng = L.latLng(position.coords.latitude, position.coords.longitude);
+        currentLatitude = position.coords.latitude;
+        currentLongitude = position.coords.longitude;
+
+        // Save current location to localStorage
+        saveToLocalStorage('currentLatitude', currentLatitude);
+        saveToLocalStorage('currentLongitude', currentLongitude);
+
+        var accuracy = position.coords.accuracy;
+
+        if (blueMarker) {
+            map.removeLayer(blueMarker);
+        }
+        addBlueMarker(latlng);
+
+        // Recenter map every 5 seconds
+        if (updateCounter % 5 === 0) {
+            map.setView(latlng, 15);
+        }
+        updateCounter++;
+
+        checkWithinRadius(); // Check if within 500m radius
+        if (withinRadius) {
+            clearInterval(track);
+            Swal.fire("Destination arrived!");
+            audio.play();
+        }
+
+        console.log("Your coordinate is: Lat: " + currentLatitude + " Long: " + currentLongitude + " Accuracy: " + accuracy);
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        var R = 6371; // Radius of the Earth in km
+        var dLat = deg2rad(lat2 - lat1);
+        var dLon = deg2rad(lon2 - lon1);
+        var a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2)
+            ;
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        var d = R * c; // Distance in km
+        return d;
+    }
+
+    function deg2rad(deg) {
+        return deg * (Math.PI / 180);
+    }
+
+    function checkWithinRadius() {
+        if (currentLatitude && currentLongitude && destLatitude && destLongitude) {
+            var distance = calculateDistance(currentLatitude, currentLongitude, destLatitude, destLongitude);
+            withinRadius = distance <= 0.5; // Within 500m radius (0.5km)
+        } else {
+            withinRadius = false;
+        }
+    }
+
+    map.on('click', handleMapClick);
+
+    L.Control.geocoder({
+        defaultMarkGeocode: false,
+        collapsed: false
+    }).on('markgeocode', function (e) {
+        if (marker) {
+            map.removeLayer(marker);
+        }
+        var latlng = e.geocode.center;
+        destLatitude = latlng.lat;
+        destLongitude = latlng.lng;
+
+        // Save destination to localStorage
+        saveToLocalStorage('destLatitude', destLatitude);
+        saveToLocalStorage('destLongitude', destLongitude);
+
+        marker = L.marker(latlng, {
+            icon: L.icon({
+                iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                tooltipAnchor: [16, -28],
+                shadowSize: [41, 41]
+            })
+        }).addTo(map);
+        map.setView(latlng, 15);
+    }).addTo(map);
+
+</script>
+
 </body>
 </html>
